@@ -44,15 +44,10 @@ export default function Sidebar() {
   return (
     <aside
       className={[
-        // tamaño/posición
         "hidden md:flex md:sticky top-0 h-screen w-[240px]",
-        // fondo azul degradado
         "bg-gradient-to-b from-brand-700 to-brand-600",
-        // borde/luz a la derecha
         "shadow-[inset_-2px_0_0_rgba(255,255,255,.180)]",
-        // color de texto
         "text-white",
-        // layout interno
         "flex-col gap-4 p-4",
       ].join(" ")}
     >
@@ -64,11 +59,12 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-col gap-1">
-        <NavItem href="/hoy"        label="Hoy"          icon={Home} />
-        <NavItem href="/calendario" label="Calendario"   icon={CalendarDays} />
-        <NavItem href="/pacientes"  label="Pacientes"    icon={Users2} />
-        <NavItem href="/contable"   label="Contabilidad" icon={Wallet} />
-        <NavItem href="/otros"      label="Otros"        icon={Grid3X3} />
+        <NavItem href="/hoy"                   label="Hoy"          icon={Home} />
+        <NavItem href="/calendario"            label="Calendario"   icon={CalendarDays} />
+        <NavItem href="/citas/informacioncita" label="Citas"        icon={CalendarDays} />
+        <NavItem href="/pacientes"             label="Pacientes"    icon={Users2} />
+        <NavItem href="/contable"              label="Contabilidad" icon={Wallet} />
+        <NavItem href="/otros"                 label="Otros"        icon={Grid3X3} />
       </nav>
 
       <div className="flex-1" />
