@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-//import Cookies from "js-cookie";
 
 interface RoleGuardProps {
   role: "paciente" | "asistente" | "doctor";
@@ -23,7 +22,7 @@ const RoleGuard: React.FC<RoleGuardProps> = ({ role, children }) => {
     try {
       const user = JSON.parse(storedUser);
       if (user.role !== role) {
-        router.push("/"); // rol incorrecto
+        router.push("/");
         return;
       }
 

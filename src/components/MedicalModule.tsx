@@ -153,7 +153,6 @@ export default function MedicalModule({
         </div>
       </div>
 
-      {/* Título */}
       <div>
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-700">
           {doctor.nombre}

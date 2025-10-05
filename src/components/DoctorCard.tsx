@@ -40,7 +40,7 @@ export default function DoctorCard({ doctor }: { doctor: Doctor }) {
         setRole("paciente");
       }
     } else {
-      setRole("paciente"); // fallback
+      setRole("paciente");
     }
   }, []);
 
@@ -61,7 +61,6 @@ export default function DoctorCard({ doctor }: { doctor: Doctor }) {
     ? doctor.sedes.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
-  // Esperar a que role se cargue
   if (!role) return null;
 
   return (

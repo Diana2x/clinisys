@@ -13,7 +13,6 @@ import {
   FileText,
   Receipt,
   Building2,
-  //Settings,
   LogOut,
 } from "lucide-react";
 
@@ -29,7 +28,7 @@ interface NavItemProps {
 
 function normalizePath(p: string | null | undefined) {
   if (!p) return "/";
-  // elimina trailing slash excepto si es la raíz
+
   return p.replace(/\/+$/g, "") || "/";
 }
 
@@ -37,11 +36,8 @@ function NavItem({ href, label, icon: Icon }: NavItemProps) {
   const pathname = usePathname();
   const pathNorm = normalizePath(pathname);
   const hrefNorm = normalizePath(href);
-
-  // activo si path === href o si path es subruta de href (/asistente/citas/n)
   const active = pathNorm === hrefNorm || pathNorm.startsWith(hrefNorm + "/");
 
-  // DEBUG: ver en consola lo que recibe cada item
   useEffect(() => {
    
     console.log("[NavItem]", { pathname, pathNorm, href, hrefNorm, active });

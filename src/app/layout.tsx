@@ -1,7 +1,7 @@
-"use client"; // Obligatorio porque usamos hooks en SessionProvider
+"use client";
 
 
-import "./globals.css"; // tu CSS global
+import "./globals.css";
 import React from "react";
 
 export default function RootLayout({
@@ -12,7 +12,6 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {/* SessionProvider envuelve toda la app para que useSession() funcione en cualquier layout */}
       
           {children}
        

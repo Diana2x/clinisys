@@ -3,7 +3,6 @@
 import React from "react";
 import RoleGuard from "../../../components/RoleGuard";
 
-/* Helpers de Slot */
 type State = "free" | "busy";
 
 function SlotPill({ state, label }: { state: State; label: string }) {
@@ -15,7 +14,7 @@ function SlotPill({ state, label }: { state: State; label: string }) {
   return <div className={`${base} ${styles}`}>{label}</div>;
 }
 
-/* Días y demo agenda (puedes reemplazar por tu data real) */
+/* Días y demo agenda (reemplazar por tu data real) */
 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"] as const;
 
 const demoAgenda = {
@@ -28,7 +27,6 @@ export default function CalendarioDoctorPage() {
   return (
     <RoleGuard role="doctor">
       <main className="px-8 py-6 min-h-screen">
-        {/* Título grande similar a otros módulos */}
         <h1 className="text-3xl font-bold text-brand-700">
           Calendario Semanal
         </h1>
@@ -36,7 +34,6 @@ export default function CalendarioDoctorPage() {
         {/* Agenda */}
         <div className="overflow-x-auto">
           <div className="grid grid-cols-[120px_repeat(5,minmax(0,1fr))] gap-x-4 gap-y-4">
-            {/* Cabecera de días */}
             <div />
             {days.map((d) => (
               <div key={d} className="text-slate-700 font-semibold text-center text-lg truncate">
@@ -44,7 +41,6 @@ export default function CalendarioDoctorPage() {
               </div>
             ))}
 
-            {/* Filas de horario */}
             {(Object.keys(demoAgenda) as Array<keyof typeof demoAgenda>).map((time) => (
               <React.Fragment key={time}>
                 <div className="text-slate-700 font-semibold text-lg">{time}</div>
@@ -65,7 +61,6 @@ export default function CalendarioDoctorPage() {
             ))}
           </div>
 
-          {/* Leyenda */}
           <div className="flex items-center gap-6 text-slate-600 text-sm mt-6">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-md ring-1 ring-green-400/40 bg-white border border-slate-300" />

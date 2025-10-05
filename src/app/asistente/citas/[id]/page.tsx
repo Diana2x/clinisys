@@ -55,6 +55,5 @@ export default function MedicoPage() {
   if (loading) return <p className="p-4">Cargando datos del médico...</p>;
   if (!doctor) return <p className="p-4">No se encontró el médico.</p>;
 
-  // 🔹 Pasamos el role explícitamente
   return <MedicalModule doctor={doctor} role="asistente" />;
 }

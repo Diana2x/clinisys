@@ -16,7 +16,7 @@ export default function AsistenteLayout({ children }: LayoutProps) {
     const storedUser = localStorage.getItem("usuario");
 
     if (!storedUser) {
-      router.replace("/"); // evita "flash" de ruta
+      router.replace("/");
       return;
     }
 
@@ -28,7 +28,6 @@ export default function AsistenteLayout({ children }: LayoutProps) {
         return;
       }
 
-      // Asignamos literal válido
       setUserRole("asistente");
     } catch {
       router.replace("/");
@@ -37,7 +36,6 @@ export default function AsistenteLayout({ children }: LayoutProps) {
 
   return (
     <div className="flex">
-      {/* Navbar solo se renderiza cuando ya sabemos que es asistente */}
       {userRole && <Navbar role={userRole} />}
       <main className="flex-1">
         {userRole ? (
