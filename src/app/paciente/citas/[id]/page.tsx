@@ -6,15 +6,14 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase/config"; 
 import MedicalModule from "../../../../components/MedicalModule";
 import { Doctor } from "../../../../components/DoctorCard";
-import Cookies from "js-cookie"; // 🔹 Importar Cookies
+import Cookies from "js-cookie";
 
 export default function MedicoPage() {
   const { id } = useParams(); 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<"paciente" | "asistente" | "doctor" | null>(null); // 🔹 Estado para rol
+  const [role, setRole] = useState<"paciente" | "asistente" | "doctor" | null>(null); 
 
-  // 🔹 Obtener rol desde la cookie al cargar la página
   useEffect(() => {
     const usuario = Cookies.get("usuario");
     if (usuario) {
@@ -31,7 +30,6 @@ export default function MedicoPage() {
     }
   }, []);
 
-  // 🔹 Cargar información del doctor
   useEffect(() => {
     if (!id || Array.isArray(id)) return;
 
@@ -72,11 +70,9 @@ export default function MedicoPage() {
     fetchDoctor();
   }, [id]);
 
-  // 🔹 Mostrar loading mientras carga rol o datos del doctor
   if (loading || role === null) return <p className="p-4">Cargando...</p>;
   if (!doctor) return <p className="p-4">No se encontró el médico.</p>;
 
-  // 🔹 Pasar rol dinámicamente al módulo médico
   return <MedicalModule doctor={doctor} role={role} />;
 }
 
