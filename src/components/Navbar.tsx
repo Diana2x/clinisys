@@ -14,6 +14,7 @@ import {
   Receipt,
   Building2,
   LogOut,
+  PlusCircle,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -39,7 +40,7 @@ function NavItem({ href, label, icon: Icon }: NavItemProps) {
   const active = pathNorm === hrefNorm || pathNorm.startsWith(hrefNorm + "/");
 
   useEffect(() => {
-   
+
     console.log("[NavItem]", { pathname, pathNorm, href, hrefNorm, active });
   }, [pathname, href, pathNorm, hrefNorm, active]);
 
@@ -83,6 +84,8 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
       items = [
         { href: "/asistente/hoy", label: "Hoy", icon: Home },
         { href: "/asistente/citas", label: "Citas", icon: CalendarDays },
+        { href: "/asistente/citas/nueva", label: "Crear cita",  icon: PlusCircle },
+
       ];
       break;
     case "doctor":
