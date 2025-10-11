@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "firebase": "^12.3.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.544.0",
