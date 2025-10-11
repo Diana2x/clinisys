@@ -35,7 +35,7 @@ export default function PacientesPage() {
     const searchLower = searchTerm.toLowerCase();
     return (
       paciente.nombre.toLowerCase().includes(searchLower) ||
-      paciente.apellido.toLowerCase().includes(searchLower) ||
+      paciente.apellidos.toLowerCase().includes(searchLower) ||
       paciente.dni.includes(searchTerm) ||
       paciente.email.toLowerCase().includes(searchLower)
     );
