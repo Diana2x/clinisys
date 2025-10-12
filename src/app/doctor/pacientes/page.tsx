@@ -108,11 +108,11 @@ export default function PacientesDoctorPage() {
 
   return (
     <RoleGuard role="doctor">
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
-        <div className="max-w-7xl mx-auto">
+      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6 w-full">
+        <div className="w-full">
           {/* Header Section */}
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg">
+            <div className="bg-gradient-to-r from-sky-700 to-sky-600 rounded-2xl p-6 text-white shadow-lg">
               <h1 className="text-3xl font-bold mb-2">Gestión de Pacientes</h1>
               <p className="text-blue-100">Administra los registros médicos de tus pacientes</p>
             </div>
@@ -167,47 +167,50 @@ export default function PacientesDoctorPage() {
           )}
 
           {/* Patients Grid */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              {filteredPacientes.length} {filteredPacientes.length === 1 ? 'paciente' : 'pacientes'} encontrados
-            </h2>
-            
-            {filteredPacientes.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-                <svg className="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">
-                  {searchTerm ? 'No se encontraron coincidencias' : 'No hay pacientes registrados'}
-                </h3>
-                <p className="text-gray-500 max-w-md mx-auto">
-                  {searchTerm 
-                    ? "Intenta con otros términos de búsqueda o "
-                    : "Comienza agregando un nuevo paciente para gestionar sus registros médicos. "
-                  }
-                  {!searchTerm && (
-                    <button
-                      onClick={handleAddNew}
-                      className="text-blue-600 hover:text-blue-700 font-medium focus:outline-none focus:underline"
-                    >
-                      Agregar paciente
-                    </button>
-                  )}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPacientes.map((paciente) => (
-                  <PacienteCard
-                    key={paciente.id}
-                    paciente={paciente}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+       
+<div className="mb-8 w-full">
+  <h2 className="text-xl font-semibold text-gray-800 mb-4">
+    {filteredPacientes.length} {filteredPacientes.length === 1 ? 'paciente' : 'pacientes'} encontrados
+  </h2>
+
+  {filteredPacientes.length === 0 ? (
+    <div className="bg-white rounded-lg p-8 text-center shadow-sm border border-gray-100 w-full">
+      <svg className="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h3 className="text-lg font-medium text-gray-900 mb-1">
+        {searchTerm ? 'No se encontraron coincidencias' : 'No hay pacientes registrados'}
+      </h3>
+      <p className="text-gray-500 max-w-md mx-auto">
+        {searchTerm 
+          ? "Intenta con otros términos de búsqueda o "
+          : "Comienza agregando un nuevo paciente para gestionar sus registros médicos. "
+        }
+        {!searchTerm && (
+          <button
+            onClick={handleAddNew}
+            className="text-blue-600 hover:text-blue-700 font-medium focus:outline-none focus:underline"
+          >
+            Agregar paciente
+          </button>
+        )}
+      </p>
+    </div>
+  ) : (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {filteredPacientes.map((paciente) => (
+        <PacienteCard
+          key={paciente.id}
+          paciente={paciente}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          className="bg-white rounded-lg shadow-sm p-4" // <- estilo moderno para la tarjeta
+        />
+      ))}
+    </div>
+  )}
+</div>
+
         </div>
       </main>
     </RoleGuard>
