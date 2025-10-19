@@ -1,92 +1,163 @@
 "use client";
+import { useCallback, useEffect, useState } from "react";
+import { listarCitas, eliminarCita } from "@/services/citas.service";
+import Link from "next/link";
+import FlashToast from "@/components/FlashToast";
+import { Pencil, Trash2 } from "lucide-react";
+import type { Cita } from "@/types/cita";
+import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
-import React, { useEffect, useState } from "react";
-import RoleGuard from "../../../components/RoleGuard";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../../firebase/config";
-import DoctorCard, { Doctor } from "../../../components/DoctorCard";
+type ToastState = { show: boolean; msg: string };
 
-export default function CitaAsistentePage() {
-  const [medicos, setMedicos] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState("");
+export default function CitasListaPage() {
+  // ❌ useState<any>  ->  ✅ tipado explícito
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [estado, setEstado] = useState<string>("");
+  const [cursor, setCursor] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [nextCursor, setNextCursor] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [toast, setToast] = useState<ToastState>({ show: false, msg: "" });
 
-  useEffect(() => {
-    async function load() {
+  // ✅ useCallback con deps; así no te advierte el hook
+  const cargar = useCallback(
+    async (reset: boolean = false) => {
       setLoading(true);
-      try {
-        const q = collection(db, "medicos");
-        const snap = await getDocs(q);
-
-        const docs: Doctor[] = snap.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            nombre: data.nombre || "Sin nombre",
-            especialidad: data.especialidad || "General",
-            cedula: data.cedula || "",
-            email: data.email || "",
-            telefono: data.telefono || "",
-            bio: data.bio || "",
-            services: Array.isArray(data.services) ? data.services : [],
-            initials: data.initials || "",
-            stats: data.stats || {},
-            sedes: Array.isArray(data.sedes)
-              ? data.sedes
-              : typeof data.sedes === "string"
-              ? data.sedes.split(",").map((s) => s.trim())
-              : [],
-          };
-        });
-
-        setMedicos(docs);
-      } catch (err) {
-        console.error("Error cargando médicos:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const espOptions = Array.from(new Set(medicos.map((m) => m.especialidad))).filter(Boolean);
-  const visibles = medicos.filter(
-    (m) => !filtroEspecialidad || m.especialidad === filtroEspecialidad
+      const res = await listarCitas({
+        estado: estado || undefined,
+        pageSize: 10,
+        cursor: reset ? null : cursor,
+      });
+      setCitas((prev) => (reset ? res.items : [...prev, ...res.items]));
+      setNextCursor(res.nextCursor);
+      setLoading(false);
+    },
+    [estado, cursor] // <- dependencias reales
   );
 
-  return (
-    <RoleGuard role="asistente">
-      <main className="p-6 space-y-6">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-brand-700">Agendar una Cita</h1>
-          <div>
-            <select
-              value={filtroEspecialidad}
-              onChange={(e) => setFiltroEspecialidad(e.target.value)}
-              className="rounded-lg border px-3 py-2"
-            >
-              <option value="">Todas las especialidades</option>
-              {espOptions.map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
-            </select>
-          </div>
-        </header>
+  // Montaje inicial
+  useEffect(() => {
+    cargar(true);
+  }, [cargar]);
 
-        {loading ? (
-          <p>Cargando médicos disponibles...</p>
-        ) : visibles.length === 0 ? (
-          <p>No se encontraron médicos.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visibles.map((m) => (
-              <DoctorCard key={m.id} doctor={m} />
+  // Cuando cambia el estado del filtro
+  useEffect(() => {
+    // al cambiar el filtro reinicia paginación
+    setCursor(null);
+    cargar(true);
+  }, [estado, cargar]);
+
+  async function handleEliminar(id: string, nombre: string) {
+    if (!confirm(`¿Eliminar la cita de ${nombre}?`)) return;
+    await eliminarCita(id);
+    setCitas((prev) => prev.filter((x) => x.id !== id));
+    setToast({ show: true, msg: `Cita de “${nombre}” eliminada 🗑️` });
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Citas registradas</h1>
+      </div>
+
+      {/* Filtro por estado */}
+      <div className="flex gap-2 items-center">
+        <select
+          className="border rounded-xl px-3 py-2 text-sm"
+          value={estado}
+          onChange={(e) => setEstado(e.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmada">Confirmada</option>
+          <option value="atendida">Atendida</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+        {loading && <span className="text-xs text-gray-400 ml-2">Cargando…</span>}
+      </div>
+
+      {/* Tabla */}
+      <div className="border rounded-2xl overflow-hidden shadow-sm bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700">
+            <tr>
+              <th className="text-left p-3 font-medium">Fecha</th>
+              <th className="text-left p-3 font-medium">Paciente</th>
+              <th className="text-left p-3 font-medium">Doctor</th>
+              <th className="text-left p-3 font-medium">Estado</th>
+              <th className="text-right p-3 font-medium">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {citas.map((c) => (
+              <tr key={c.id} className="border-t hover:bg-gray-50 transition-colors">
+                <td className="p-3 text-gray-700">{new Date(c.fecha).toLocaleString()}</td>
+                <td className="p-3 font-medium text-gray-900">{c.pacienteNombre}</td>
+                <td className="p-3 text-gray-700">{c.doctorNombre}</td>
+                <td className="p-3 capitalize">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium
+                      ${
+                        c.estado === "confirmada"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : c.estado === "pendiente"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : c.estado === "atendida"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                  >
+                    {c.estado}
+                  </span>
+                </td>
+                <td className="p-3 text-right space-x-2">
+                  <Link
+                    href={`/asistente/citas/${c.id}/editar`}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 transition"
+                  >
+                    <Pencil size={14} /> Editar
+                  </Link>
+                  <button
+                    onClick={() => handleEliminar(c.id!, c.pacienteNombre)}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg border border-red-300 text-red-700 hover:bg-red-50 transition"
+                  >
+                    <Trash2 size={14} /> Eliminar
+                  </button>
+                </td>
+              </tr>
             ))}
-          </div>
+            {!loading && citas.length === 0 && (
+              <tr>
+                <td className="p-6 text-center text-gray-500" colSpan={5}>
+                  Sin resultados. Usa “Crear cita” desde el sidebar.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Paginación */}
+      <div className="flex justify-center">
+        {nextCursor && (
+          <button
+            className="px-4 py-2 border rounded-xl hover:bg-gray-50 transition"
+            onClick={() => {
+              setCursor(nextCursor);
+              cargar();
+            }}
+          >
+            Cargar más
+          </button>
         )}
-      </main>
-    </RoleGuard>
+      </div>
+
+      {/* Toast */}
+      <FlashToast
+        show={toast.show}
+        message={toast.msg}
+        onClose={() => setToast({ show: false, msg: "" })}
+      />
+    </div>
   );
 }
