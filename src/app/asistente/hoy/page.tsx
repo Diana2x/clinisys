@@ -1,14 +1,12 @@
 "use client";
-
-import React from "react";
 import RoleGuard from "../../../components/RoleGuard";
+import DashboardAsistente from "../../../components/dashboard/DashboardAsistente";
 
 export default function HoyAsistentePage() {
   return (
     <RoleGuard role="asistente">
-      <main style={{ padding: "20px" }}>
-        <h1>Página de Hoy del Asistente</h1>
-                
+      <main className="p-6">
+        <DashboardAsistente />
       </main>
     </RoleGuard>
   );

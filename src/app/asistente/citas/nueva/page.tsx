@@ -1,224 +1,222 @@
 "use client";
-
-import React, { useEffect, useMemo, useState } from "react";
-import RoleGuard from "../../../../components/RoleGuard";
-import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../../../firebase/config";
-import { useSearchParams } from "next/navigation";
-
-type Doctor = { id: string; nombre: string; especialidad: string; sedes?: string[] | string };
+import { useEffect, useMemo, useState } from "react";
+import { listarPacientes, Paciente } from "@/services/pacientes.service";
+import { listarMedicos, Medico } from "@/services/medicos.service";
+import { crearCita } from "@/services/citas.service";
+import NuevoPacienteModal from "@/components/NuevoPacienteModal";
+import FlashToast from "@/components/FlashToast";
+import { useRouter } from "next/navigation";
 
 export default function NuevaCitaPage() {
-  const [medicos, setMedicos] = useState<Doctor[]>([]);
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<{ type: "success" | "error" | ""; msg: string }>({
-    type: "",
-    msg: "",
-  });
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [medicos, setMedicos] = useState<Medico[]>([]);
+  const [showNuevoPaciente, setShowNuevoPaciente] = useState(false);
 
-  const searchParams = useSearchParams();
-  const pre = searchParams.get("doctorId") || "";
+  // Toast
+  const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: "" });
 
-  const initialForm = (doctorId = pre) => ({
-    doctorId,
-    sede: "",
+  // FORM
+  const [form, setForm] = useState({
+    pacienteId: "",
     pacienteNombre: "",
-    pacienteTelefono: "",
-    pacienteEmail: "",
+    doctorId: "",
+    doctorNombre: "",
     fecha: "",
-    hora: "",
     motivo: "",
+    notas: "",
+    estado: "pendiente",
   });
-
-  const [form, setForm] = useState(initialForm());
 
   useEffect(() => {
     (async () => {
-      const snap = await getDocs(collection(db, "medicos"));
-      const docs: Doctor[] = snap.docs.map((d) => {
-        const data: any = d.data();
-        const sedes =
-          Array.isArray(data.sedes)
-            ? data.sedes
-            : typeof data.sedes === "string"
-            ? data.sedes.split(",").map((s: string) => s.trim()).filter(Boolean)
-            : [];
-        return { id: d.id, nombre: data.nombre || "Sin nombre", especialidad: data.especialidad || "General", sedes };
-      });
-      setMedicos(docs);
+      const [ps, ms] = await Promise.all([listarPacientes(), listarMedicos()]);
+      setPacientes(ps);
+      setMedicos(ms);
     })();
   }, []);
 
-  const medico = useMemo(() => medicos.find((m) => m.id === form.doctorId), [medicos, form.doctorId]);
+  const canSave = useMemo(() => Boolean(form.pacienteId && form.doctorId && form.fecha), [
+    form.pacienteId,
+    form.doctorId,
+    form.fecha,
+  ]);
 
-  async function submit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // validación mínima
-    if (!form.doctorId || !form.pacienteNombre || !form.fecha || !form.hora) {
-      setStatus({ type: "error", msg: "Faltan campos obligatorios (médico, paciente, fecha y hora)." });
-      return;
-    }
-
+    if (!canSave) return;
     setSaving(true);
-    setStatus({ type: "", msg: "" });
-    try {
-      const fechaISO = new Date(`${form.fecha}T${form.hora}:00`);
-      await addDoc(collection(db, "citas"), {
-        doctorId: form.doctorId,
-        doctorNombre: medico?.nombre ?? null,
-        sede: form.sede || null,
-        pacienteNombre: form.pacienteNombre,
-        pacienteTelefono: form.pacienteTelefono || null,
-        pacienteEmail: form.pacienteEmail || null,
-        motivo: form.motivo || null,
-        fecha: fechaISO,               // Firestore lo guarda como Timestamp
-        estado: "pendiente",
-        createdAt: serverTimestamp(),
-      });
+    await crearCita({
+      pacienteId: form.pacienteId,
+      pacienteNombre: form.pacienteNombre,
+      doctorId: form.doctorId,
+      doctorNombre: form.doctorNombre,
+      fecha: new Date(form.fecha),
+      motivo: form.motivo || undefined,
+      notas: form.notas || undefined,
+      estado: form.estado as any,
+    });
+    router.push("/asistente/citas");
+  }
 
-      // baner
-      setStatus({ type: "success", msg: "Cita creada" });
-
-      setForm((f) => initialForm(f.doctorId));
-
-      // auto-ocultar el mensaje a los 3s
-      setTimeout(() => setStatus({ type: "", msg: "" }), 3000);
-    } catch (err) {
-      console.error(err);
-      setStatus({ type: "error", msg: "No se pudo crear la cita. Intenta de nuevo." });
-    } finally {
-      setSaving(false);
-    }
+  function onPacienteCreado(p: { id: string; nombre: string }) {
+    setPacientes(prev => [{ id: p.id, nombre: p.nombre } as any, ...prev]);
+    setForm(f => ({ ...f, pacienteId: p.id, pacienteNombre: p.nombre }));
+    setToast({ show: true, msg: `Paciente “${p.nombre}” agregado con éxito.` });
   }
 
   return (
-    <RoleGuard role="asistente">
-      <main className="p-6 space-y-6 max-w-3xl">
-        <h1 className="text-2xl font-bold">Crear cita</h1>
+    <>
+      {/* CONTENEDOR TARJETA para asegurar contraste */}
+      <div className="p-4 md:p-8">
+        <div className="mx-auto max-w-2xl rounded-2xl bg-white text-gray-900 shadow-lg ring-1 ring-gray-200">
+          <form onSubmit={onSubmit} className="p-6 md:p-8 space-y-4">
+            <h1 className="text-2xl font-semibold">Nueva cita</h1>
 
-        {/* Banner de estado */}
-        {status.type && (
-          <div
-            role="alert"
-            className={[
-              "rounded-lg border px-4 py-3 text-sm",
-              status.type === "success"
-                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                : "border-rose-300 bg-rose-50 text-rose-800",
-            ].join(" ")}
-          >
-            {status.msg}
-          </div>
-        )}
+            {/* PACIENTE */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
+              <div className="flex gap-2">
+                <select
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                  value={form.pacienteId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    const p = pacientes.find(x => x.id === id);
+                    setForm(f => ({ ...f, pacienteId: id, pacienteNombre: p?.nombre ?? "" }));
+                  }}
+                >
+                  <option value="">Selecciona un paciente…</option>
+                  {pacientes.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}{(p as any).apellidos ? ` ${(p as any).apellidos}` : ""}
+                    </option>
+                  ))}
+                </select>
 
-        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span>Médico*</span>
-            <select
-              className="border rounded p-2 w-full"
-              value={form.doctorId}
-              onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value, sede: "" }))}
-              disabled={saving}
-            >
-              <option value="">Selecciona…</option>
-              {medicos.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre} — {m.especialidad}
-                </option>
-              ))}
-            </select>
-          </label>
+                <button
+                  type="button"
+                  className="px-3 py-2 rounded-xl border border-gray-300 bg-white hover:bg-gray-50"
+                  onClick={() => setShowNuevoPaciente(true)}
+                >
+                  Nuevo
+                </button>
+              </div>
+              {pacientes.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">No hay pacientes aún. Crea uno con el botón “Nuevo”.</p>
+              )}
+            </div>
 
-          <label className="space-y-1">
-            <span>Sede</span>
-            <select
-              className="border rounded p-2 w-full"
-              value={form.sede}
-              onChange={(e) => setForm((f) => ({ ...f, sede: e.target.value }))}
-              disabled={!medico || saving}
-            >
-              <option value="">{medico ? "Selecciona…" : "-- Selecciona un médico primero --"}</option>
-              {(medico?.sedes as string[] | undefined)?.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
+            {/* DOCTOR */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Doctor</label>
+              <select
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                value={form.doctorId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  const d = medicos.find(x => x.id === id);
+                  setForm(f => ({ ...f, doctorId: id, doctorNombre: d?.nombre ?? "" }));
+                }}
+              >
+                <option value="">Selecciona un doctor…</option>
+                {medicos.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nombre}{d.especialidad ? ` — ${d.especialidad}` : ""}
+                  </option>
+                ))}
+              </select>
+              {medicos.length === 0 && (
+                <p className="mt-1 text-xs text-amber-600">No hay doctores en la base de datos.</p>
+              )}
+            </div>
 
-          <label className="space-y-1">
-            <span>Paciente*</span>
-            <input
-              className="border rounded p-2 w-full"
-              value={form.pacienteNombre}
-              onChange={(e) => setForm((f) => ({ ...f, pacienteNombre: e.target.value }))}
-              disabled={saving}
-            />
-          </label>
+            {/* FECHA */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora</label>
+              <input
+                type="datetime-local"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                value={form.fecha}
+                onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+              />
+            </div>
 
-          <label className="space-y-1">
-            <span>Teléfono</span>
-            <input
-              className="border rounded p-2 w-full"
-              value={form.pacienteTelefono}
-              onChange={(e) => setForm((f) => ({ ...f, pacienteTelefono: e.target.value }))}
-              disabled={saving}
-            />
-          </label>
+            {/* MOTIVO */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
+              <input
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                placeholder="Ej. Consulta general"
+                value={form.motivo}
+                onChange={(e) => setForm({ ...form, motivo: e.target.value })}
+              />
+            </div>
 
-          <label className="space-y-1">
-            <span>Email</span>
-            <input
-              className="border rounded p-2 w-full"
-              value={form.pacienteEmail}
-              onChange={(e) => setForm((f) => ({ ...f, pacienteEmail: e.target.value }))}
-              disabled={saving}
-            />
-          </label>
+            {/* NOTAS */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
+              <textarea
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                placeholder="Observaciones…"
+                value={form.notas}
+                onChange={(e) => setForm({ ...form, notas: e.target.value })}
+              />
+            </div>
 
-          <label className="space-y-1">
-            <span>Fecha*</span>
-            <input
-              type="date"
-              className="border rounded p-2 w-full"
-              value={form.fecha}
-              onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
-              disabled={saving}
-            />
-          </label>
+            {/* ESTADO */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <select
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                value={form.estado}
+                onChange={(e) => setForm({ ...form, estado: e.target.value })}
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="confirmada">Confirmada</option>
+                <option value="atendida">Atendida</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </div>
 
-          <label className="space-y-1">
-            <span>Hora*</span>
-            <input
-              type="time"
-              className="border rounded p-2 w-full"
-              value={form.hora}
-              onChange={(e) => setForm((f) => ({ ...f, hora: e.target.value }))}
-              disabled={saving}
-            />
-          </label>
+            {/* ACCIONES */}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => history.back()}
+                className="px-4 py-2 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-900"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={saving || !canSave}
+                className={`px-4 py-2 rounded-xl border ${
+                  canSave
+                    ? "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-gray-200 border-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                {saving ? "Guardando…" : "Guardar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
-          <label className="md:col-span-2 space-y-1">
-            <span>Motivo</span>
-            <textarea
-              rows={3}
-              className="border rounded p-2 w-full"
-              value={form.motivo}
-              onChange={(e) => setForm((f) => ({ ...f, motivo: e.target.value }))}
-              disabled={saving}
-            />
-          </label>
+      {/* MODAL NUEVO PACIENTE */}
+      <NuevoPacienteModal
+        open={showNuevoPaciente}
+        onClose={() => setShowNuevoPaciente(false)}
+        onCreated={onPacienteCreado}
+      />
 
-          <div className="md:col-span-2">
-            <button
-              disabled={saving}
-              className="px-4 py-2 rounded-lg bg-sky-600 text-white disabled:opacity-50"
-            >
-              {saving ? "Guardando…" : "Crear cita"}
-            </button>
-          </div>
-        </form>
-      </main>
-    </RoleGuard>
+      {/* TOAST */}
+      <FlashToast
+        show={toast.show}
+        message={toast.msg}
+        onClose={() => setToast({ show: false, msg: "" })}
+      />
+    </>
   );
 }
