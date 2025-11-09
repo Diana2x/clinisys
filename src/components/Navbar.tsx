@@ -93,6 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
         { href: "/doctor/hoy", label: "Hoy", icon: Home },
         { href: "/doctor/calendario", label: "Calendario", icon: CalendarDays },
         { href: "/doctor/citas", label: "Citas", icon: CalendarDays },
+        { href: "/doctor/recetas", label: "Recetas", icon: FileText },
         { href: "/doctor/pacientes", label: "Pacientes", icon: Users2 },
         { href: "/doctor/contabilidad", label: "Contabilidad", icon: Wallet },
         { href: "/doctor/otros", label: "Otros", icon: Grid3X3 },
